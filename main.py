@@ -1,21 +1,41 @@
 from llama_index.core import Document
 from llama_index.embeddings.ollama import OllamaEmbedding
 
-from chunking import SemanticChunking
+from chunking import MarkdownChunking, SemanticChunking
 
-with open("ht400_maintenance_manual.md", "r") as f:
-    text = f.read()
 
-document = Document(text=text)
+def build_strategy(choice: str):
+    if choice == "1":
+        return MarkdownChunking()
+    embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url="http://localhost:11434")
+    return SemanticChunking(embed_model)
 
-embed_local = OllamaEmbedding(model_name="nomic-embed-text", base_url="http://localhost:11434")
 
-# swap in MarkdownChunking() (no args needed) to switch strategy
-strategy = SemanticChunking(embed_local)
+def prompt_strategy() -> str:
+    print("Select a chunking strategy:")
+    print("1. Markdown")
+    print("2. Semantic")
+    while True:
+        choice = input("> ").strip()
+        if choice in ("1", "2"):
+            return choice
+        print("Invalid choice, enter 1 or 2.")
 
-chunks = strategy.chunk(document)
 
-print(f"Number of chunks: {len(chunks)}")
+def main() -> None:
+    choice = prompt_strategy()
 
-for i, chunk in enumerate(chunks):
-    print(f"Chunk {i}: {chunk.text}")
+    with open("ht400_maintenance_manual.md", "r") as f:
+        text = f.read()
+
+    document = Document(text=text)
+    strategy = build_strategy(choice)
+    chunks = strategy.chunk(document)
+
+    print(f"Number of chunks: {len(chunks)}")
+    for i, chunk in enumerate(chunks):
+        print(f"Chunk {i}: {chunk.text}")
+
+
+if __name__ == "__main__":
+    main()
