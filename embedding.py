@@ -15,15 +15,15 @@ class LocalEmbedding(EmbeddingStrategy):
         model_name: str = "nomic-embed-text",
         base_url: str = "http://localhost:11434",
     ):
-        self._model = OllamaEmbedding(model_name=model_name, base_url=base_url)
+        self.model = OllamaEmbedding(model_name=model_name, base_url=base_url)
 
     def embed(self, text: str) -> list[float]:
-        return self._model.get_text_embedding(text)
+        return self.model.get_text_embedding(text)
 
 
 class RemoteEmbedding(EmbeddingStrategy):
     def __init__(self, model_name: str = "text-embedding-3-small"):
-        self._model = OpenAIEmbedding(model_name=model_name)
+        self.model = OpenAIEmbedding(model_name=model_name)
 
     def embed(self, text: str) -> list[float]:
-        return self._model.get_text_embedding(text)
+        return self.model.get_text_embedding(text)
