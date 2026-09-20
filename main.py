@@ -2,6 +2,7 @@ from llama_index.core import Document
 
 from chunking import MarkdownChunking, SemanticChunking
 from embedding import LocalEmbedding, RemoteEmbedding
+from storage import ChromaStore
 
 
 def build_embedding_strategy(choice: str):
@@ -51,8 +52,16 @@ def main() -> None:
     chunks = chunking_strategy.chunk(document)
 
     print(f"Number of chunks: {len(chunks)}")
-    for i, chunk in enumerate(chunks):
-        print(f"Chunk {i}: {chunk.text}")
+
+    embedder = LocalEmbedding()
+    ids = [str(i) for i in range(len(chunks))]
+    texts = [chunk.text for chunk in chunks]
+    embeddings = [embedder.embed(text) for text in texts]
+
+    store = ChromaStore()
+    store.add(ids=ids, texts=texts, embeddings=embeddings)
+
+    print(f"Stored {len(chunks)} chunks in Chroma.")
 
 
 if __name__ == "__main__":
