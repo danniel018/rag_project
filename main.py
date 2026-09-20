@@ -5,7 +5,7 @@ from embedding import LocalEmbedding, RemoteEmbedding
 from storage import ChromaStore
 
 
-def build_embedding_strategy(choice: str):
+def build_pipeline_execution(choice: str):
     if choice == "1":
         return LocalEmbedding()
     return RemoteEmbedding()
@@ -17,8 +17,8 @@ def build_chunking_strategy(choice: str, embedding_strategy):
     return SemanticChunking(embedding_strategy.model)
 
 
-def prompt_embedding_strategy() -> str:
-    print("Select an embedding strategy:")
+def prompt_pipeline_strategy() -> str:
+    print("Select a pipeline execution:")
     print("1. Local (Ollama)")
     print("2. Remote (OpenAI)")
     while True:
@@ -39,17 +39,25 @@ def prompt_chunking_strategy() -> str:
         print("Invalid choice, enter 1 or 2.")
 
 
+SOURCE_FILES = [
+    "ht400_maintenance_manual.md",
+    "quick_reference_liner_change.md",
+    "service_bulletin_SB-2026-04.md",
+]
+
+
 def main() -> None:
-    embedding_choice = prompt_embedding_strategy()
+    pipeline_choice = prompt_pipeline_strategy()
     chunking_choice = prompt_chunking_strategy()
 
-    with open("ht400_maintenance_manual.md", "r") as f:
-        text = f.read()
+    documents = []
+    for path in SOURCE_FILES:
+        with open(path, "r") as f:
+            documents.append(Document(text=f.read(), metadata={"source": path}))
 
-    document = Document(text=text)
-    embedding_strategy = build_embedding_strategy(embedding_choice)
-    chunking_strategy = build_chunking_strategy(chunking_choice, embedding_strategy)
-    chunks = chunking_strategy.chunk(document)
+    pipeline_execution = build_pipeline_execution(pipeline_choice)
+    chunking_strategy = build_chunking_strategy(chunking_choice, pipeline_execution)
+    chunks = chunking_strategy.chunk(documents)
 
     print(f"Number of chunks: {len(chunks)}")
 
@@ -62,6 +70,7 @@ def main() -> None:
     store.add(ids=ids, texts=texts, embeddings=embeddings)
 
     print(f"Stored {len(chunks)} chunks in Chroma.")
+    print("embeddings", len(embeddings), type(embeddings[0]), embeddings[0][:5])  # Print first 5 dimensions of the first embedding
 
 
 if __name__ == "__main__":
