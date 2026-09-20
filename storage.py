@@ -6,5 +6,13 @@ class ChromaStore:
         client = chromadb.PersistentClient(path=path)
         self._collection = client.get_or_create_collection(collection_name)
 
-    def add(self, ids: list[str], texts: list[str], embeddings: list[list[float]]) -> None:
-        self._collection.add(ids=ids, documents=texts, embeddings=embeddings)
+    def add(
+        self,
+        ids: list[str],
+        texts: list[str],
+        embeddings: list[list[float]],
+        metadatas: list[dict],
+    ) -> None:
+        self._collection.add(
+            ids=ids, documents=texts, embeddings=embeddings, metadatas=metadatas
+        )

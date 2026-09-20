@@ -64,13 +64,16 @@ def main() -> None:
     embedder = LocalEmbedding()
     ids = [str(i) for i in range(len(chunks))]
     texts = [chunk.text for chunk in chunks]
+    metadatas = [chunk.metadata for chunk in chunks]
     embeddings = [embedder.embed(text) for text in texts]
 
     store = ChromaStore()
-    store.add(ids=ids, texts=texts, embeddings=embeddings)
+    store.add(ids=ids, texts=texts, embeddings=embeddings, metadatas=metadatas)
 
     print(f"Stored {len(chunks)} chunks in Chroma.")
-    print("embeddings", len(embeddings), type(embeddings[0]), embeddings[0][:5])  # Print first 5 dimensions of the first embedding
+    print(
+        "embeddings", len(embeddings), type(embeddings[0]), embeddings[0][:5]
+    )  # Print first 5 dimensions of the first embedding
 
 
 if __name__ == "__main__":
