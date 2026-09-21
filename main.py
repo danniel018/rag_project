@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from llama_index.core import Document
 
 from chunking import MarkdownChunking, SemanticChunking
@@ -59,7 +61,7 @@ def build_embeddings(chunks: list, embedder) -> list[list[float]]:
 
 
 def store_chunks(chunks: list, embeddings: list[list[float]]) -> None:
-    ids = [str(i) for i in range(len(chunks))]
+    ids = [str(uuid4()) for _ in chunks]
     texts = [chunk.text for chunk in chunks]
     metadatas = [chunk.metadata for chunk in chunks]
 
