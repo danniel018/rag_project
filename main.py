@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from llama_index.core import Document
 
-from chunking import MarkdownChunking, SemanticChunking
+from chunking import MarkdownChunking, SemanticChunking, SentenceSplitterChunking
 from embedding import LocalEmbedding, RemoteEmbedding
 from storage import ChromaStore
 
@@ -16,7 +16,9 @@ def build_pipeline_execution(choice: str):
 def build_chunking_strategy(choice: str, embedding_strategy):
     if choice == "1":
         return MarkdownChunking()
-    return SemanticChunking(embedding_strategy.model)
+    if choice == "2":
+        return SemanticChunking(embedding_strategy.model)
+    return SentenceSplitterChunking()
 
 
 def prompt_pipeline_strategy() -> str:
@@ -34,11 +36,12 @@ def prompt_chunking_strategy() -> str:
     print("Select a chunking strategy:")
     print("1. Markdown")
     print("2. Semantic")
+    print("3. Sentence Splitter")
     while True:
         choice = input("> ").strip()
-        if choice in ("1", "2"):
+        if choice in ("1", "2", "3"):
             return choice
-        print("Invalid choice, enter 1 or 2.")
+        print("Invalid choice, enter 1, 2 or 3.")
 
 
 SOURCE_FILES = [
