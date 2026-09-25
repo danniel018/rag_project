@@ -4,6 +4,8 @@ from llama_index.core import Document
 
 from chunking import MarkdownChunking, SemanticChunking, SentenceSplitterChunking
 from embedding import LocalEmbedding, RemoteEmbedding
+from llm import LocalLLM, RemoteLLM
+from query_engine import QueryEngine
 from storage import ChromaStore
 
 
@@ -11,6 +13,12 @@ def build_pipeline_execution(choice: str):
     if choice == "1":
         return LocalEmbedding()
     return RemoteEmbedding()
+
+
+def build_llm(choice: str):
+    if choice == "1":
+        return LocalLLM()
+    return RemoteLLM()
 
 
 def build_chunking_strategy(choice: str, embedding_strategy):
@@ -63,13 +71,30 @@ def build_embeddings(chunks: list, embedder) -> list[list[float]]:
     return [embedder.embed(chunk.text) for chunk in chunks]
 
 
-def store_chunks(chunks: list, embeddings: list[list[float]]) -> None:
+def store_chunks(
+    chunks: list, embeddings: list[list[float]], store: ChromaStore
+) -> None:
     ids = [str(uuid4()) for _ in chunks]
     texts = [chunk.text for chunk in chunks]
     metadatas = [chunk.metadata for chunk in chunks]
 
-    store = ChromaStore()
+    # Rebuild the collection so re-runs don't duplicate chunks or mix
+    # embeddings from different models.
+    store.reset()
     store.add(ids=ids, texts=texts, embeddings=embeddings, metadatas=metadatas)
+
+
+def run_question_loop(query_engine: QueryEngine) -> None:
+    print("Ask a question (empty line to exit).")
+    while True:
+        try:
+            question = input("Question> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return
+        if not question:
+            return
+        print(f"\n{query_engine.query(question)}\n")
 
 
 def main() -> None:
@@ -85,13 +110,14 @@ def main() -> None:
     print(f"Number of chunks: {len(chunks)}")
 
     embeddings = build_embeddings(chunks, pipeline_execution)
-    store_chunks(chunks, embeddings)
+    store = ChromaStore()
+    store_chunks(chunks, embeddings, store)
 
     print(f"Stored {len(chunks)} chunks in Chroma.")
-    print(
-        "embeddings", len(embeddings), type(embeddings[0]), embeddings[0][:5]
-    )  # Print first 5 dimensions of the first embedding
     print("Indexing complete.")
+
+    query_engine = QueryEngine(pipeline_execution, build_llm(pipeline_choice), store)
+    run_question_loop(query_engine)
 
 if __name__ == "__main__":
     main()
