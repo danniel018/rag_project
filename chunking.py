@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from re import search
 
 from llama_index.core import Document
 from llama_index.core.node_parser import (
@@ -7,6 +8,15 @@ from llama_index.core.node_parser import (
     SentenceSplitter,
 )
 
+GLOBAL_HEADING_PATTERNS = [
+    r"\d+\.?\s*scope\b",
+    r"\d+\.?\s*general safety requirements",
+    r"\d+\.\d+\s*confined space",
+]
+
+def is_global_section(chunk_text: str) -> bool:
+    text_norm = chunk_text.lower()
+    return any(search(pat, text_norm) for pat in GLOBAL_HEADING_PATTERNS)
 
 class ChunkingStrategy(ABC):
     @abstractmethod

@@ -2,7 +2,12 @@ from uuid import uuid4
 
 from llama_index.core import Document
 
-from chunking import MarkdownChunking, SemanticChunking, SentenceSplitterChunking
+from chunking import (
+    MarkdownChunking,
+    SemanticChunking,
+    SentenceSplitterChunking,
+    is_global_section,
+)
 from embedding import LocalEmbedding, RemoteEmbedding
 from llm import LocalLLM, RemoteLLM
 from query_engine import QueryEngine
@@ -107,6 +112,10 @@ def main() -> None:
     chunking_strategy = build_chunking_strategy(chunking_choice, pipeline_execution)
     chunks = chunking_strategy.chunk(documents)
 
+    for chunk in chunks:
+        if is_global_section(chunk.text):
+            chunk.metadata["global_section"] = True
+
     print(f"Number of chunks: {len(chunks)}")
 
     embeddings = build_embeddings(chunks, pipeline_execution)
@@ -118,6 +127,7 @@ def main() -> None:
 
     query_engine = QueryEngine(pipeline_execution, build_llm(pipeline_choice), store)
     run_question_loop(query_engine)
+
 
 if __name__ == "__main__":
     main()

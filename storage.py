@@ -24,10 +24,18 @@ class ChromaStore:
 
     def query(
         self, embedding: list[float], n_results: int
-    ) -> tuple[list[str], list[dict]]:
+    ) -> tuple[list[str], list[str], list[dict]]:
         result = self._collection.query(
             query_embeddings=[embedding],
             n_results=n_results,
             include=["documents", "metadatas"],
         )
-        return result["documents"][0], result["metadatas"][0]
+        return result["ids"][0], result["documents"][0], result["metadatas"][0]
+
+    def get_global_chunks(self) -> tuple[list[str], list[str], list[dict]]:
+        """Chunks tagged global_context=True, independent of similarity score."""
+        result = self._collection.get(
+            where={"global_context": True},
+            include=["documents", "metadatas"],
+        )
+        return result["ids"], result["documents"], result["metadatas"]

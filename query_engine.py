@@ -18,7 +18,18 @@ class QueryEngine:
         self._top_k = top_k
 
     def query(self, question: str) -> str:
-        texts, metadatas = self._store.query(
+        ids, texts, metadatas = self._store.query(
             embedding=self._embedder.embed(question), n_results=self._top_k
         )
+
+        global_ids, global_texts, global_metadatas = self._store.get_global_chunks()
+
+        seen = set(ids)
+        for gid, gtext, gmeta in zip(global_ids, global_texts, global_metadatas):
+            if gid not in seen:
+                ids.append(gid)
+                texts.append(gtext)
+                metadatas.append(gmeta)
+                seen.add(gid)
+
         return self._llm.chat(build_messages(question, texts, metadatas))
