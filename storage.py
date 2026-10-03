@@ -33,9 +33,9 @@ class ChromaStore:
         return result["ids"][0], result["documents"][0], result["metadatas"][0]
 
     def get_global_chunks(self) -> tuple[list[str], list[str], list[dict]]:
-        """Chunks tagged global_context=True, independent of similarity score."""
+        """Chunks tagged global_section=True, independent of similarity score."""
         result = self._collection.get(
-            where={"global_context": True},
+            where={"global_section": True},
             include=["documents", "metadatas"],
         )
         return result["ids"], result["documents"], result["metadatas"]
