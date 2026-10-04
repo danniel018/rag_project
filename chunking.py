@@ -43,7 +43,7 @@ class SentenceSplitterChunking(ChunkingStrategy):
     chunk_size
     """
 
-    def __init__(self, chunk_size: int = 256, chunk_overlap: int = 20):
+    def __init__(self, chunk_size: int = 128, chunk_overlap: int = 30):
         self._parser = SentenceSplitter(
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )

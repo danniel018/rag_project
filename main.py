@@ -8,6 +8,7 @@ from chunking import (
     SentenceSplitterChunking,
     is_global_section,
 )
+from config import QUESTIONS, REQUIRED_SPANS
 from embedding import LocalEmbedding, RemoteEmbedding
 from llm import LocalLLM, RemoteLLM
 from query_engine import QueryEngine
@@ -102,6 +103,26 @@ def run_question_loop(query_engine: QueryEngine) -> None:
         print(f"\n{query_engine.query(question)}\n")
 
 
+def run_retrieval_check(query_engine: QueryEngine) -> None:
+    passed = 0
+    for i, (question, spans) in enumerate(zip(QUESTIONS, REQUIRED_SPANS), start=1):
+        question, pass_ = query_engine.query(question, required_spans=spans)
+        passed += pass_
+        print(f"Q{i:02d} [{'PASS' if pass_ else 'FAIL'}] {question}")
+    print(f"\n{passed}/{len(QUESTIONS)} questions retrieved all required spans.")
+
+
+def prompt_run_mode() -> str:
+    print("Select a run mode:")
+    print("1. Ask questions (LLM)")
+    print("2. Check retrieval for config questions")
+    while True:
+        choice = input("> ").strip()
+        if choice in ("1", "2"):
+            return choice
+        print("Invalid choice, enter 1 or 2.")
+
+
 def main() -> None:
     pipeline_choice = prompt_pipeline_strategy()
     chunking_choice = prompt_chunking_strategy()
@@ -126,7 +147,10 @@ def main() -> None:
     print("Indexing complete.")
 
     query_engine = QueryEngine(pipeline_execution, build_llm(pipeline_choice), store)
-    run_question_loop(query_engine)
+    if prompt_run_mode() == "1":
+        run_question_loop(query_engine)
+    else:
+        run_retrieval_check(query_engine)
 
 
 if __name__ == "__main__":
