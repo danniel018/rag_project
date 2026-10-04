@@ -112,15 +112,21 @@ def run_retrieval_check(query_engine: QueryEngine) -> None:
     print(f"\n{passed}/{len(QUESTIONS)} questions retrieved all required spans.")
 
 
+def execute_all_questions(query_engine: QueryEngine) -> None:
+    
+    for index, question in enumerate(QUESTIONS, start=1):
+        print(f"\nQ{index:02d}: {query_engine.query(question)}\n")
+
 def prompt_run_mode() -> str:
     print("Select a run mode:")
     print("1. Ask questions (LLM)")
     print("2. Check retrieval for config questions")
+    print("3. Execute all questions")
     while True:
         choice = input("> ").strip()
-        if choice in ("1", "2"):
+        if choice in ("1", "2", "3"):
             return choice
-        print("Invalid choice, enter 1 or 2.")
+        print("Invalid choice, enter 1, 2, or 3.")
 
 
 def main() -> None:
@@ -149,8 +155,10 @@ def main() -> None:
     query_engine = QueryEngine(pipeline_execution, build_llm(pipeline_choice), store)
     if prompt_run_mode() == "1":
         run_question_loop(query_engine)
-    else:
+    elif prompt_run_mode() == "2":
         run_retrieval_check(query_engine)
+    else:
+        execute_all_questions(query_engine)
 
 
 if __name__ == "__main__":
