@@ -106,7 +106,7 @@ def run_question_loop(query_engine: QueryEngine) -> None:
 def run_retrieval_check(query_engine: QueryEngine) -> None:
     passed = 0
     for i, (question, spans) in enumerate(zip(QUESTIONS, REQUIRED_SPANS), start=1):
-        question, pass_ = query_engine.query(question, required_spans=spans)
+        question, pass_ = query_engine.check_retrieval(question, spans)
         passed += pass_
         print(f"Q{i:02d} [{'PASS' if pass_ else 'FAIL'}] {question}")
     print(f"\n{passed}/{len(QUESTIONS)} questions retrieved all required spans.")
