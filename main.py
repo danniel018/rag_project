@@ -106,9 +106,10 @@ def run_question_loop(query_engine: QueryEngine) -> None:
 def run_retrieval_check(query_engine: QueryEngine) -> None:
     passed = 0
     for i, (question, spans) in enumerate(zip(QUESTIONS, REQUIRED_SPANS), start=1):
-        question, pass_ = query_engine.check_retrieval(question, spans)
+        question, pass_, missing = query_engine.check_retrieval(question, spans)
         passed += pass_
-        print(f"Q{i:02d} [{'PASS' if pass_ else 'FAIL'}] {question}")
+        missing_info = "" if pass_ else f" | Missing span index(es): {missing}"
+        print(f"Q{i:02d} [{'PASS' if pass_ else 'FAIL'}] {question}{missing_info}")
     print(f"\n{passed}/{len(QUESTIONS)} questions retrieved all required spans.")
 
 
@@ -132,6 +133,7 @@ def prompt_run_mode() -> str:
 def main() -> None:
     pipeline_choice = prompt_pipeline_strategy()
     chunking_choice = prompt_chunking_strategy()
+    run_mode_choice = prompt_run_mode()
 
     documents = build_documents(SOURCE_FILES)
 
@@ -153,9 +155,9 @@ def main() -> None:
     print("Indexing complete.")
 
     query_engine = QueryEngine(pipeline_execution, build_llm(pipeline_choice), store)
-    if prompt_run_mode() == "1":
+    if run_mode_choice == "1":
         run_question_loop(query_engine)
-    elif prompt_run_mode() == "2":
+    elif run_mode_choice == "2":
         run_retrieval_check(query_engine)
     else:
         execute_all_questions(query_engine)
