@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.ollama import Ollama
-from llama_index.llms.openai import OpenAI
+from portkey_ai import Portkey
 
 
 class LLMStrategy(ABC):
@@ -29,8 +29,18 @@ class LocalLLM(LLMStrategy):
 
 
 class RemoteLLM(LLMStrategy):
-    def __init__(self, model_name: str = "gpt-5.4-mini"):
-        self.model = OpenAI(model=model_name)
+    # Portkey Model Catalog format: "@<provider-slug>/<model>".
+    # Reads PORTKEY_API_KEY from the environment.
+    def __init__(self, model_name: str = "@openai/gpt-6-luna"):
+        self.model_name = model_name
+        self.client = Portkey()
 
     def chat(self, messages: list[ChatMessage]) -> str:
-        return self.model.chat(messages).message.content
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": message.role.value, "content": message.content}
+                for message in messages
+            ],
+        )
+        return response.choices[0].message.content

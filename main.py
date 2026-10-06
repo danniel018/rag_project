@@ -38,7 +38,7 @@ def build_chunking_strategy(choice: str, embedding_strategy):
 def prompt_pipeline_strategy() -> str:
     print("Select a pipeline execution:")
     print("1. Local (Ollama)")
-    print("2. Remote (OpenAI)")
+    print("2. Remote (Portkey)")
     while True:
         choice = input("> ").strip()
         if choice in ("1", "2"):
