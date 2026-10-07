@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.ollama import Ollama
@@ -6,6 +7,9 @@ from portkey_ai import Portkey
 
 
 class LLMStrategy(ABC):
+
+    last_usage: ClassVar[dict[str, float]] = {}
+
     @abstractmethod
     def chat(self, messages: list[ChatMessage]) -> str: ...
 
@@ -25,7 +29,12 @@ class LocalLLM(LLMStrategy):
         )
 
     def chat(self, messages: list[ChatMessage]) -> str:
-        return self.model.chat(messages).message.content
+        response = self.model.chat(messages)
+        self.last_usage = {
+            "prompt_tokens": response.raw.get.get("prompt_eval_count"),
+            "completion_tokens": response.raw.get.get("completion_eval_count"),
+        }
+        return response.message.content
 
 
 class RemoteLLM(LLMStrategy):
@@ -43,4 +52,9 @@ class RemoteLLM(LLMStrategy):
                 for message in messages
             ],
         )
+        usage = response.usage
+        self.last_usage = {
+            "prompt_tokens": usage.prompt_tokens,
+            "completion_tokens": usage.completion_tokens,
+        }
         return response.choices[0].message.content

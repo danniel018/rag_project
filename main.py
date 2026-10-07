@@ -1,3 +1,5 @@
+import statistics
+import time
 from uuid import uuid4
 
 from llama_index.core import Document
@@ -114,9 +116,28 @@ def run_retrieval_check(query_engine: QueryEngine) -> None:
 
 
 def execute_all_questions(query_engine: QueryEngine) -> None:
-    
+    # Warm-up: the first local call loads the model into memory.
+    query_engine.query(QUESTIONS[0])
+    cold = query_engine.last_timings["total_s"]
+    print(f"Warm-up query (includes model load): {cold:.2f}s\n")
+
+    stages = {"embed_s": [], "retrieve_s": [], "llm_s": [], "total_s": [], "prompt_tokens": [], "completion_tokens": []}
     for index, question in enumerate(QUESTIONS, start=1):
-        print(f"\nQ{index:02d}: {query_engine.query(question)}\n")
+        answer = query_engine.query(question)
+        t = query_engine.last_timings
+        for k, v in stages.items():
+            v.append(t[k])
+            
+        print(f"\nQ{index:02d} ({t['total_s']:.2f}s: embed {t['embed_s']:.2f} | "
+              f"retrieve {t['retrieve_s']:.3f} | llm {t['llm_s']:.2f})\n{answer}\n")
+
+    print("\n== Latency summary (seconds) ==")
+    for k, v in stages.items():
+        print(f"{k:<11} median {statistics.median(v):.3f} | max {max(v):.3f}")
+        
+    print("\n== Token usage summary ==")
+    print(f"in {sum(stages['prompt_tokens'])} prompt tokens | "
+          f"out {sum(stages['completion_tokens'])} completion tokens")
 
 def prompt_run_mode() -> str:
     print("Select a run mode:")
@@ -147,7 +168,9 @@ def main() -> None:
 
     print(f"Number of chunks: {len(chunks)}")
 
+    t0 = time.perf_counter()
     embeddings = build_embeddings(chunks, pipeline_execution)
+    print(f"Indexing Embedding time: {time.perf_counter() - t0:.2f}s")   
     store = ChromaStore()
     store_chunks(chunks, embeddings, store)
 
