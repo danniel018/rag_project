@@ -40,9 +40,11 @@ class LocalLLM(LLMStrategy):
 class RemoteLLM(LLMStrategy):
     # Portkey Model Catalog format: "@<provider-slug>/<model>".
     # Reads PORTKEY_API_KEY from the environment.
-    def __init__(self, model_name: str = "@openai/gpt-6-luna"):
+    def __init__(self, model_name: str = "@azure-openai/gpt-6-luna"):
         self.model_name = model_name
-        self.client = Portkey()
+        self.client = Portkey(
+            base_url="https://portkeygateway.perficient.com/v1",
+        )
 
     def chat(self, messages: list[ChatMessage]) -> str:
         response = self.client.chat.completions.create(
