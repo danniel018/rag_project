@@ -21,9 +21,7 @@ class QueryEngine:
         self.last_timings: dict[str, float] = {}
 
     def retrieve(self, question: str) -> tuple[list[str], list[dict]]:
-        t0 = time.perf_counter()
         embedding = self._embedder.embed(question)
-        t1 = time.perf_counter()
 
         ids, texts, metadatas = self._store.query(
             embedding=embedding, n_results=self._top_k
@@ -36,9 +34,6 @@ class QueryEngine:
                 texts.append(gtext)
                 metadatas.append(gmeta)
                 seen.add(gid)
-        t2 = time.perf_counter()
-
-        self.last_timings = {"embed_s": t1 - t0, "retrieve_s": t2 - t1}
         return texts, metadatas
 
     def check_retrieval(
@@ -56,15 +51,12 @@ class QueryEngine:
         return question, pass_, missing
 
     def query(self, question: str) -> str:
-        texts, metadatas = self.retrieve(question)
         t0 = time.perf_counter()
+        texts, metadatas = self.retrieve(question)
         answer = self._llm.chat(build_messages(question, texts, metadatas))
-        self.last_timings["llm_s"] = time.perf_counter() - t0
-        self.last_timings["total_s"] = sum(self.last_timings.values())
-        self.last_timings["prompt_tokens"] = self._llm.last_usage.get(
-            "prompt_tokens", 0
-        )
-        self.last_timings["completion_tokens"] = self._llm.last_usage.get(
-            "completion_tokens", 0
-        )
+        self.last_timings = {
+            "total_s": time.perf_counter() - t0,
+            "prompt_tokens": self._llm.last_usage.get("prompt_tokens", 0),
+            "completion_tokens": self._llm.last_usage.get("completion_tokens", 0),
+        }
         return answer

@@ -115,29 +115,31 @@ def run_retrieval_check(query_engine: QueryEngine) -> None:
     print(f"\n{passed}/{len(QUESTIONS)} questions retrieved all required spans.")
 
 
-def execute_all_questions(query_engine: QueryEngine) -> None:
+def execute_all_questions(query_engine: QueryEngine, indexing_s: float) -> None:
     # Warm-up: the first local call loads the model into memory.
     query_engine.query(QUESTIONS[0])
     cold = query_engine.last_timings["total_s"]
     print(f"Warm-up query (includes model load): {cold:.2f}s\n")
 
-    stages = {"embed_s": [], "retrieve_s": [], "llm_s": [], "total_s": [], "prompt_tokens": [], "completion_tokens": []}
+    times, prompt_tokens, completion_tokens = [], [], []
     for index, question in enumerate(QUESTIONS, start=1):
         answer = query_engine.query(question)
         t = query_engine.last_timings
-        for k, v in stages.items():
-            v.append(t[k])
-            
-        print(f"\nQ{index:02d} ({t['total_s']:.2f}s: embed {t['embed_s']:.2f} | "
-              f"retrieve {t['retrieve_s']:.3f} | llm {t['llm_s']:.2f})\n{answer}\n")
+        times.append(t["total_s"])
+        prompt_tokens.append(t["prompt_tokens"])
+        completion_tokens.append(t["completion_tokens"])
+        print(f"\nQ{index:02d} ({t['total_s']:.2f}s)\n{answer}\n")
 
     print("\n== Latency summary (seconds) ==")
-    for k, v in stages.items():
-        print(f"{k:<11} median {statistics.median(v):.3f} | max {max(v):.3f}")
-        
+    print(f"per question median {statistics.median(times):.3f} | max {max(times):.3f}")
+    print(f"embeddings indexing {indexing_s:.2f}")
+    print(f"total pipeline execution {indexing_s + sum(times):.2f} "
+          f"(indexing + {len(times)} questions)")
+
     print("\n== Token usage summary ==")
-    print(f"in {sum(stages['prompt_tokens'])} prompt tokens | "
-          f"out {sum(stages['completion_tokens'])} completion tokens")
+    print(f"in {sum(prompt_tokens)} prompt tokens | "
+          f"out {sum(completion_tokens)} completion tokens")
+
 
 def prompt_run_mode() -> str:
     print("Select a run mode:")
@@ -170,7 +172,8 @@ def main() -> None:
 
     t0 = time.perf_counter()
     embeddings = build_embeddings(chunks, pipeline_execution)
-    print(f"Indexing Embedding time: {time.perf_counter() - t0:.2f}s")   
+    indexing_s = time.perf_counter() - t0
+    print(f"Indexing Embedding time: {indexing_s:.2f}s")
     store = ChromaStore()
     store_chunks(chunks, embeddings, store)
 
@@ -183,7 +186,7 @@ def main() -> None:
     elif run_mode_choice == "2":
         run_retrieval_check(query_engine)
     else:
-        execute_all_questions(query_engine)
+        execute_all_questions(query_engine, indexing_s)
 
 
 if __name__ == "__main__":
