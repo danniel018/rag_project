@@ -30,9 +30,10 @@ class LocalLLM(LLMStrategy):
 
     def chat(self, messages: list[ChatMessage]) -> str:
         response = self.model.chat(messages)
+        # Ollama reports prompt_eval_count (input) and eval_count (output).
         self.last_usage = {
-            "prompt_tokens": response.raw.get.get("prompt_eval_count"),
-            "completion_tokens": response.raw.get.get("completion_eval_count"),
+            "prompt_tokens": response.raw.get("prompt_eval_count"),
+            "completion_tokens": response.raw.get("eval_count") 
         }
         return response.message.content
 
