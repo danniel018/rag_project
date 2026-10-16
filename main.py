@@ -1,4 +1,5 @@
 import statistics
+import sys
 import time
 from uuid import uuid4
 
@@ -6,7 +7,6 @@ from llama_index.core import Document
 
 from chunking import (
     MarkdownChunking,
-    SemanticChunking,
     SentenceSplitterChunking,
     is_global_section,
 )
@@ -29,35 +29,41 @@ def build_llm(choice: str):
     return RemoteLLM()
 
 
-def build_chunking_strategy(choice: str, embedding_strategy):
+def build_chunking_strategy(choice: str):
     if choice == "1":
         return MarkdownChunking()
-    if choice == "2":
-        return SemanticChunking(embedding_strategy.model)
     return SentenceSplitterChunking()
 
 
-def prompt_pipeline_strategy() -> str:
-    print("Select a pipeline execution:")
-    print("1. Local (Ollama)")
-    print("2. Remote (Portkey)")
+def ask_choice(title: str, options: list[str]) -> str:
+    """Show a numbered menu with a quit option; exits the app on 'q'."""
+    print(title)
+    for i, option in enumerate(options, start=1):
+        print(f"{i}. {option}")
+    print("q. Quit")
+    valid = [str(i) for i in range(1, len(options) + 1)]
     while True:
-        choice = input("> ").strip()
-        if choice in ("1", "2"):
+        try:
+            choice = input("> ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            sys.exit(0)
+        if choice in ("q", "quit"):
+            print("Goodbye.")
+            sys.exit(0)
+        if choice in valid:
             return choice
-        print("Invalid choice, enter 1 or 2.")
+        print(f"Invalid choice, enter {', '.join(valid)} or q to quit.")
+
+
+def prompt_pipeline_strategy() -> str:
+    return ask_choice(
+        "Select a pipeline execution:", ["Local (Ollama)", "Remote (Portkey)"]
+    )
 
 
 def prompt_chunking_strategy() -> str:
-    print("Select a chunking strategy:")
-    print("1. Markdown")
-    print("2. Semantic")
-    print("3. Sentence Splitter")
-    while True:
-        choice = input("> ").strip()
-        if choice in ("1", "2", "3"):
-            return choice
-        print("Invalid choice, enter 1, 2 or 3.")
+    return ask_choice("Select a chunking strategy:", ["Markdown", "Sentence Splitter"])
 
 
 SOURCE_FILES = [
@@ -93,14 +99,14 @@ def store_chunks(
 
 
 def run_question_loop(query_engine: QueryEngine) -> None:
-    print("Ask a question (empty line to exit).")
+    print("Ask a question (empty line or q to quit).")
     while True:
         try:
             question = input("Question> ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             return
-        if not question:
+        if not question or question.lower() in ("q", "quit"):
             return
         print(f"\n{query_engine.query(question)}\n")
 
@@ -142,15 +148,14 @@ def execute_all_questions(query_engine: QueryEngine, indexing_s: float) -> None:
 
 
 def prompt_run_mode() -> str:
-    print("Select a run mode:")
-    print("1. Ask questions (LLM)")
-    print("2. Check retrieval for config questions")
-    print("3. Execute all questions")
-    while True:
-        choice = input("> ").strip()
-        if choice in ("1", "2", "3"):
-            return choice
-        print("Invalid choice, enter 1, 2, or 3.")
+    return ask_choice(
+        "Select a run mode:",
+        [
+            "Ask questions (LLM)",
+            "Check retrieval for config questions",
+            "Execute all questions",
+        ],
+    )
 
 
 def main() -> None:
@@ -161,7 +166,7 @@ def main() -> None:
     documents = build_documents(SOURCE_FILES)
 
     pipeline_execution = build_pipeline_execution(pipeline_choice)
-    chunking_strategy = build_chunking_strategy(chunking_choice, pipeline_execution)
+    chunking_strategy = build_chunking_strategy(chunking_choice)
     chunks = chunking_strategy.chunk(documents)
 
     for chunk in chunks:
